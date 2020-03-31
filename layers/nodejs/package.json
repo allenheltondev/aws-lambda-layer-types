@@ -1,0 +1,14 @@
+{
+  "name": "lambda-layer-functions",
+  "version": "1.0.0",
+  "description": "NodeJS lambda layer invocable functions",
+  "author": "AllenHeltonDev",
+  "license": "MIT",
+  "dependencies": {},
+  "scripts": {},
+  "devDependencies": {
+    "short-uuid": "^3.1.1",
+    "aws-sdk": "^2.517.0",
+    "aws-xray-sdk": "^2.3.5"
+  }
+}
