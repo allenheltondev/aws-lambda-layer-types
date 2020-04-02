@@ -1,0 +1,14 @@
+{
+  "name": "get-contact",
+  "version": "1.0.0",
+  "description": "Returns a contact with a specified id",
+  "main": "app.js",
+  "author": "allenheltondev",
+  "license": "MIT",
+  "dependencies": {},
+  "scripts": {},
+  "devDependencies": {
+    "aws-sdk": "^2.543.0",
+    "http-status-codes": "^1.4.0"
+  }
+}

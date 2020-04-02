@@ -1,0 +1,238 @@
+openapi: 3.0.0
+info:
+  title: Notifications
+  description: Adds, Updates, Reads, and Deletes contacts and sends text messages
+  version: 1.0.0
+tags:
+- name: Contacts
+  description: |
+    Operations to manage maintenance of contacts.
+- name: Messages
+  description: |
+    Operations to manage maintenance of messages.
+x-amazon-apigateway-cors:
+  allowOrigins:
+    - '*'
+  allowMethods:
+    - DELETE
+    - GET
+    - POST
+    - PUT
+  allowHeaders:
+    - authorization
+    - content-type
+  maxAge: 3600
+
+paths:
+  /contacts:
+    post:
+      summary: Add a new contact
+      description: Create a new contact with the phone number and name. Returns contact id.
+      tags:
+        - Contacts
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactModel'
+
+  /contacts/{contactId}:
+    parameters:
+      - $ref: '#/components/parameters/contactId'
+    get:
+      summary: Get Contact Details
+      description: Returns the contact name and phone number for a specific id
+      tags:
+        - Contacts
+      responses:
+        200:
+          description: The request succeeded and the contact is included in the response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactModel'
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update an existing contact
+      description: Replaces the name and phone number for an existing contact with the data passed in the request body
+      tags:
+        - Contacts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactModel'
+        required: true
+      responses:
+        204:
+          $ref: '#/components/responses/NoContentUpdate'
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete an existing contact
+      description: Deletes an existing contact and all messages sent to it from the system. This call is idempotent
+      tags:
+        - Contacts
+      responses:
+        204:
+          $ref: '#/components/responses/NoContentDelete'
+
+  /contacts/{contactId}/messages:
+    parameters:
+      - $ref: '#/components/parameters/contactId'
+    post:
+      summary: Send a message to a contact
+      description: Sends a text message to a contact. If Twilio is not configured, it just logs the message to the database.
+      tags:
+        - Messages
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        404:
+          $ref: '#/components/responses/BadRequest'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageModel'
+
+    get:
+      summary: Get all messages sent to a contact
+      description: Returns an array of all messages sent to a contact
+      tags:
+        - Messages
+      responses:
+        200:
+          description: The request succeeded and the messages are included in the response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllMessagesModel'
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    contactId:
+      name: contactId
+      in: path
+      description: Identifier for a contact
+      required: true
+      example: 09sl3415098gplmn
+      schema:
+        type: string
+
+  schemas:
+    ContactModel:
+      type: object
+      required:
+        - name
+        - phoneNumber
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phoneNumber:
+          type: string
+          pattern: ^(1?(-?\d{3})-?)?(\d{3})(-?\d{4})$
+          example: 1-623-555-8704
+        comment:
+          type: string
+
+    MessageModel:
+      type: object
+      required:
+        - message
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+          example: Hello, this is my example text message
+        contactDate:
+          type: string
+        contactId:
+          type: string
+
+    AllMessagesModel:
+      type: array
+      items:
+        $ref: '#/components/schemas/MessageModel'
+
+
+  responses:
+    Created: #201
+      description: The request succeeded and created a new contact or message
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                type: string
+    NoContentUpdate: #204
+      description: The request succeeded and updated an existing contact
+    NoContentDelete: #204
+      description: The request finished processing and the contact was removed or did not exist
+    BadRequest: #400
+      description: The request was in an invalid format
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: The request was an an invalid format
+            required:
+              - message
+    NotFound: #404
+      description: The requested contact was not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: Could not find a contact with the specified id.
+            required:
+              - message
+
+    InternalServerError: #500
+      description: The server encountered an unexpected condition which prevented it from fulfilling the request.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: An error occurred saving the item.
+            required:
+              - message

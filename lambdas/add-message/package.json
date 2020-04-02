@@ -1,0 +1,15 @@
+{
+  "name": "add-message",
+  "version": "1.0.0",
+  "description": "Send a message to a specified contact",
+  "main": "app.js",
+  "author": "allenheltondev",
+  "license": "MIT",
+  "dependencies": {},
+  "scripts": {},
+  "devDependencies": {
+    "aws-sdk": "^2.543.0",
+    "http-status-codes": "^1.4.0",
+    "twilio": "3.40.0"
+  }
+}

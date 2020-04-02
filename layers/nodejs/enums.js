@@ -1,7 +1,7 @@
 module.exports = {
   dynamoDbTable: 'notification',
   entity: {
-    correspondence: 'correspondence',
+    message: 'message',
     contact: 'contact'
   }
 }

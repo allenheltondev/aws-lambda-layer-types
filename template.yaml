@@ -1,0 +1,322 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  aws-lambda-layer-types
+
+  Proof of Concept for the different AWS Lambda layer types
+
+Parameters:
+  TwilioAccountSid:
+    Type: String
+    Default: REPLACEME
+  TwilioAuthToken:
+    Type: String
+    Default: REPLACEME
+  TwilioFromNumber:
+    Type: String
+    Default: REPLACEME
+  S3BucketName:
+    Type: String
+    Default: REPLACEME
+
+Globals:
+  Function:
+    Layers:
+    - !Ref FunctionLayer
+    - !Ref DependencyLayer
+    Runtime: nodejs12.x
+    Timeout: 10
+    Tracing: Active
+
+Resources:
+  HTTPApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: dev
+      DefinitionBody:
+        'Fn::Transform':
+          Name: AWS::Include
+          Parameters:
+            Location: !Join [ '', [ 's3://', !Ref S3BucketName, '/lambda-layer-openapi-spec.yaml' ] ]
+
+  DependencyLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: dependency-layer
+      ContentUri: dependencies/
+      CompatibleRuntimes:
+        - nodejs12.x
+      RetentionPolicy: Retain
+
+  FunctionLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: FunctionLayer
+      ContentUri: layers/
+      CompatibleRuntimes:
+      - nodejs12.x
+      RetentionPolicy: Retain
+
+  AddContactFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas\add-contact
+      Handler: app.lambdaHandler
+      Role: !GetAtt AddContactFunctionRole.Arn
+      Events:
+        AddContactEndpoint:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HTTPApi
+            Method: POST
+            Path: /contacts
+
+  AddContactFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: AddContactPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:PutItem
+              Resource: !GetAtt NotificationTable.Arn
+
+  AddMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas\add-message
+      Handler: app.lambdaHandler
+      MemorySize: 256
+      Role: !GetAtt AddMessageFunctionRole.Arn
+      Events:
+        AddMessageEndpoint:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HTTPApi
+            Method: POST
+            Path: /contacts/{contactId}/messages
+      Environment:
+        Variables:
+          TwilioSid: !Ref TwilioAccountSid
+          TwilioAuthToken: !Ref TwilioAuthToken
+          TwilioFromNumber: !Ref TwilioFromNumber
+
+  AddMessageFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: AddMessagePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              Resource: !GetAtt NotificationTable.Arn
+
+  GetContactFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas\get-contact
+      Handler: app.lambdaHandler
+      Role: !GetAtt GetContactFunctionRole.Arn
+      Events:
+        GetContactEndpoint:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HTTPApi
+            Method: GET
+            Path: /contacts/{contactId}
+
+  GetContactFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: GetContactPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:GetItem
+              Resource: !GetAtt NotificationTable.Arn
+
+  GetMessagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas\get-messages
+      Handler: app.lambdaHandler
+      Role: !GetAtt GetMessagesFunctionRole.Arn
+      Events:
+        GetMessagesEndpoint:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HTTPApi
+            Method: GET
+            Path: /contacts/{contactId}/messages
+
+  GetMessagesFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: GetMessagesPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:Query
+              Resource: !GetAtt NotificationTable.Arn
+
+  UpdateContactFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas\update-contact
+      Handler: app.lambdaHandler
+      Role: !GetAtt UpdateContactFunctionRole.Arn
+      Events:
+        UpdateContactEndpoint:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HTTPApi
+            Method: PUT
+            Path: /contacts/{contactId}
+
+  UpdateContactFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: UpdateContactPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:PutItem
+              Resource: !GetAtt NotificationTable.Arn
+
+  DeleteContactFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas\delete-contact
+      Handler: app.lambdaHandler
+      Role: !GetAtt DeleteContactFunctionRole.Arn
+      Events:
+        DeleteContactEndpoint:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HTTPApi
+            Method: DELETE
+            Path: /contacts/{contactId}
+
+  DeleteContactFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: DeleteContactPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:DeleteItem
+              - dynamodb:Query
+              Resource: !GetAtt NotificationTable.Arn
+
+  NotificationTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: notification
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+
+

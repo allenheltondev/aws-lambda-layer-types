@@ -1,0 +1,15 @@
+{
+  "name": "aws-lambda-layer-types",
+  "version": "1.0.0",
+  "description": "This is an example application that uses dependency and function lambda layers to send messages and track contacts and messages",
+  "devDependencies": {
+    "aws-sdk": "^2.543.0",
+    "eslint": "^6.8.0",
+    "eslint-config-google": "^0.14.0"
+  },
+  "scripts": {
+    "provision-bucket": "aws s3 mb s3://REPALCEME",
+    "deploy": "cd dependencies/nodejs && npm install & cd ../../layers/nodejs && npm install && cd ../.. && aws s3api put-object --bucket REPLACEME --key lambda-layer-openapi-spec.yaml --body ./lambda-layer-openapi-spec.yaml && sam build && sam package --output-template-file packaged.yaml --s3-bucket REPLACEME && sam deploy --template-file packaged.yaml --stack-name lambda-layer-example-stack --capabilities CAPABILITY_IAM"
+  },
+  "license": "MIT"
+}

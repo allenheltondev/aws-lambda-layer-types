@@ -1,0 +1,15 @@
+{
+  "name": "add-contact",
+  "version": "1.0.0",
+  "description": "Add a contact into the system",
+  "main": "app.js",
+  "author": "allenheltondev",
+  "license": "MIT",
+  "dependencies": {},
+  "scripts": {},
+  "devDependencies": {
+    "aws-sdk": "^2.543.0",
+    "http-status-codes": "^1.4.0",
+    "short-uuid": "^3.1.1"
+  }
+}

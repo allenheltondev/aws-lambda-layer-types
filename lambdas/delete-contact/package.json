@@ -1,0 +1,14 @@
+{
+  "name": "delete-contact",
+  "version": "1.0.0",
+  "description": "Deletes a contact and all messages to the contact",
+  "main": "app.js",
+  "author": "allenheltondev",
+  "license": "MIT",
+  "dependencies": {},
+  "scripts": {},
+  "devDependencies": {
+    "aws-sdk": "^2.543.0",
+    "http-status-codes": "^1.4.0"
+  }
+}
