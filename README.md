@@ -1,7 +1,7 @@
 [![Twitter][1.1]][1] [![GitHub][2.1]][2] [![LinkedIn][3.1]][3] [![Medium][4.1]][4]
 # AWS Lambda Layer Types Example #
 ## Description ##
-This is an example of how to create and use the two different types of lambda layers: **Dependency** and **Function**. This repository is an example of how you would build a serverless HTTP API for maintaining a list of contacts and sending text messages to them. For a detailed walkthrough, reference the [article on Medium]().
+This is an example of how to create and use the two different types of lambda layers: **Dependency** and **Function**. This repository is an example of how you would build a serverless HTTP API for maintaining a list of contacts and sending text messages to them. For a detailed walkthrough, reference the [article on Medium](https://medium.com/better-programming/how-to-build-both-kinds-of-aws-lambda-layers-yes-there-are-two-edb945979f17).
 
 ## AWS Resources ##
 The CloudFormation template will deploy the follow resources into your AWS account
